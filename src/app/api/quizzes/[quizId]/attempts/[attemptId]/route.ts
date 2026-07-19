@@ -37,7 +37,7 @@ export async function GET(
     return NextResponse.json({ error: answersError.message }, { status: 500 })
   }
 
-  // Fetch questions with full type-specific data (including correct answers for review)
+  // Fetch questions with type-specific data
   const { data: questions, error: questionsError } = await supabase
     .from('questions')
     .select('*, question_options(*), question_pairs(*), question_items(*)')
@@ -55,6 +55,22 @@ export async function GET(
     orderedQuestions = attempt.question_order
       .map((id: string) => qMap.get(id))
       .filter(Boolean)
+  }
+
+  // If attempt is in-progress, strip correct answers (session view)
+  if (attempt.status === 'in-progress') {
+    const sanitized = orderedQuestions.map((q: Record<string, unknown>) => {
+      const opts = q.question_options as Array<Record<string, unknown>> | undefined
+      const pairs = q.question_pairs as Array<Record<string, unknown>> | undefined
+      const items = q.question_items as Array<Record<string, unknown>> | undefined
+      return {
+        ...q,
+        question_options: opts?.map((o) => ({ id: o.id, content: o.content, order_index: o.order_index })),
+        question_pairs: pairs?.map((p) => ({ id: p.id, left_text: p.left_text, order_index: p.order_index })),
+        question_items: items?.map((it) => ({ id: it.id, content: it.content, order_index: it.order_index })),
+      }
+    })
+    return NextResponse.json({ attempt, questions: sanitized })
   }
 
   return NextResponse.json({ attempt, answers, questions: orderedQuestions })
