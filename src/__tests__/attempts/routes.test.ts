@@ -209,15 +209,24 @@ describe('POST /api/quizzes/[quizId]/attempts/[attemptId]/submit', () => {
 
 describe('GET /api/quizzes/[quizId]/attempts/[attemptId]', () => {
   it('returns attempt results', async () => {
+    setTable('quizzes', [{
+      id: 'quiz-1', scoring_mode: 'all-or-nothing', pass_percentage: 60,
+    }])
     setTable('attempts', [{
       id: 'att-1', quiz_id: 'quiz-1', user_id: 'user-1', status: 'completed',
       score: 5, max_score: 10, completed_at: '2026-07-19T12:00:00Z',
     }])
     setTable('answers', [
-      { id: 'a1', attempt_id: 'att-1', question_id: 'q1', is_correct: true, points_earned: 1 },
+      { id: 'a1', attempt_id: 'att-1', question_id: 'q1', is_correct: true, points_earned: 1, answer: { value: true } },
     ])
     setTable('questions', [
-      { id: 'q1', quiz_id: 'quiz-1', type: 'true-false', content: 'Test question', points: 1, order_index: 0 },
+      {
+        id: 'q1', quiz_id: 'quiz-1', type: 'true-false', content: 'Test question', points: 1, order_index: 0,
+        question_options: [
+          { id: 'o1', question_id: 'q1', content: 'Verdadero', is_correct: true, order_index: 0 },
+          { id: 'o2', question_id: 'q1', content: 'Falso', is_correct: false, order_index: 1 },
+        ],
+      },
     ])
 
     const { GET } = await import('@/app/api/quizzes/[quizId]/attempts/[attemptId]/route')
@@ -227,6 +236,13 @@ describe('GET /api/quizzes/[quizId]/attempts/[attemptId]', () => {
     )
 
     expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.totalScore).toBeDefined()
+    expect(body.maxScore).toBeDefined()
+    expect(body.percentage).toBeDefined()
+    expect(body.passed).toBeDefined()
+    expect(body.results).toHaveLength(1)
+    expect(body.questions).toHaveLength(1)
   })
 
   it('returns 404 for non-existent attempt', async () => {

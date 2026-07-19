@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { scoreAttempt } from '@/lib/scoring'
+import type { QuestionOption, QuestionPair, QuestionItem } from '@/types/database'
 
 export async function GET(
   request: NextRequest,
@@ -24,6 +26,17 @@ export async function GET(
 
   if (attemptError || !attempt) {
     return NextResponse.json({ error: 'Attempt not found' }, { status: 404 })
+  }
+
+  // Fetch quiz for scoring_mode and pass_percentage
+  const { data: quiz, error: quizError } = await supabase
+    .from('quizzes')
+    .select('scoring_mode, pass_percentage')
+    .eq('id', quizId)
+    .single()
+
+  if (quizError || !quiz) {
+    return NextResponse.json({ error: 'Quiz not found' }, { status: 404 })
   }
 
   // Fetch answers
@@ -73,5 +86,36 @@ export async function GET(
     return NextResponse.json({ attempt, questions: sanitized })
   }
 
-  return NextResponse.json({ attempt, answers, questions: orderedQuestions })
+  // For completed attempts: re-score and return same shape as submit endpoint
+  const typeDataMap: Record<string, QuestionOption[] | QuestionPair[] | QuestionItem[]> = {}
+  for (const q of questions) {
+    typeDataMap[q.id] = (
+      q.question_options ?? q.question_pairs ?? q.question_items ?? []
+    ) as QuestionOption[] | QuestionPair[] | QuestionItem[]
+  }
+
+  const scoringResult = scoreAttempt({
+    questions: questions.map((q) => ({ id: q.id, type: q.type, points: q.points })),
+    typeDataMap,
+    answers: (answers ?? []).map((a) => ({
+      questionId: a.question_id,
+      answer: a.answer as Record<string, unknown>,
+    })),
+    scoringMode: quiz.scoring_mode,
+  })
+
+  const percentage = scoringResult.maxScore > 0
+    ? Math.round((scoringResult.totalScore / scoringResult.maxScore) * 100)
+    : 100
+  const passed = percentage >= quiz.pass_percentage
+
+  return NextResponse.json({
+    attempt,
+    results: scoringResult.results,
+    totalScore: scoringResult.totalScore,
+    maxScore: scoringResult.maxScore,
+    percentage,
+    passed,
+    questions: orderedQuestions,
+  })
 }
