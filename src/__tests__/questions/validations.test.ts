@@ -155,7 +155,7 @@ describe('createQuestionSchema', () => {
         ...validBase,
         type: 'true-false',
         correct_answer: true,
-        difficulty: 6,
+        difficulty: 4,
       })
       expect(result.success).toBe(false)
     })

@@ -4,7 +4,7 @@ const baseQuestionFields = {
   content: z.string().min(1, 'La pregunta no puede estar vacía'),
   explanation: z.string().optional(),
   hint: z.string().optional(),
-  difficulty: z.number().int().min(1).max(5),
+  difficulty: z.number().int().min(1).max(3),
   points: z.number().int().min(1).default(1),
   order_index: z.number().int().min(0),
 }
@@ -65,7 +65,7 @@ const baseUpdateFields = {
   content: z.string().min(1, 'La pregunta no puede estar vacía').optional(),
   explanation: z.string().optional(),
   hint: z.string().optional(),
-  difficulty: z.number().int().min(1).max(5).optional(),
+  difficulty: z.number().int().min(1).max(3).optional(),
   points: z.number().int().min(1).default(1).optional(),
   order_index: z.number().int().min(0).optional(),
 }

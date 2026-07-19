@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 
 interface PairDef {
   id: string
@@ -21,11 +21,15 @@ interface Props {
 }
 
 export function MatchingAnswer({ pairs, rightOptions, value, onChange, disabled }: Props) {
-  const shuffled = useMemo(
-    () => [...rightOptions].sort(() => Math.random() - 0.5),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  )
+  // Fisher-Yates shuffle once on mount — useState lazy init avoids React 19 pure-render rule
+  const [shuffled] = useState(() => {
+    const copy = [...rightOptions]
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[copy[i], copy[j]] = [copy[j], copy[i]]
+    }
+    return copy
+  })
 
   const getSelected = (pairId: string) => value.find((p) => p.pairId === pairId)?.matchedRight ?? ''
 

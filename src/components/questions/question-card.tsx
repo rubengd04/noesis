@@ -24,7 +24,7 @@ export function QuestionCard({ question, onEdit, onDelete }: QuestionCardProps) 
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline">{typeLabels[question.type] ?? question.type}</Badge>
-          <Badge variant="secondary">{question.difficulty}/5</Badge>
+          <Badge variant="secondary">{question.difficulty}/3</Badge>
           <span className="text-sm text-muted-foreground">{question.points} pt{question.points !== 1 && 's'}</span>
         </div>
         <div className="flex gap-1">

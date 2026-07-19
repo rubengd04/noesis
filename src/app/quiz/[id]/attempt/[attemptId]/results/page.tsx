@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -40,7 +40,6 @@ interface ResultData {
 
 export default function ResultsPage() {
   const { id: quizId, attemptId } = useParams<{ id: string; attemptId: string }>()
-  const router = useRouter()
   const [data, setData] = useState<ResultData | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
