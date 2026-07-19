@@ -61,11 +61,68 @@ export const createQuestionSchema = z.discriminatedUnion('type', [
   orderingSchema,
 ])
 
+const baseUpdateFields = {
+  content: z.string().min(1, 'La pregunta no puede estar vacía').optional(),
+  explanation: z.string().optional(),
+  hint: z.string().optional(),
+  difficulty: z.number().int().min(1).max(5).optional(),
+  points: z.number().int().min(1).default(1).optional(),
+  order_index: z.number().int().min(0).optional(),
+}
+
+const trueFalseUpdateSchema = z.object({
+  ...baseUpdateFields,
+  type: z.literal('true-false'),
+  correct_answer: z.boolean().optional(),
+})
+
+const multipleChoiceUpdateSchema = z.object({
+  ...baseUpdateFields,
+  type: z.literal('multiple-choice'),
+  options: z
+    .array(
+      z.object({
+        content: z.string().min(1, 'La opción no puede estar vacía'),
+        is_correct: z.boolean(),
+      }),
+    )
+    .min(2, 'Debe haber al menos 2 opciones')
+    .optional(),
+})
+
+const matchingUpdateSchema = z.object({
+  ...baseUpdateFields,
+  type: z.literal('matching'),
+  pairs: z
+    .array(
+      z.object({
+        left_text: z.string().min(1, 'El texto izquierdo no puede estar vacío'),
+        right_text: z.string().min(1, 'El texto derecho no puede estar vacío'),
+      }),
+    )
+    .min(1, 'Debe haber al menos 1 par')
+    .optional(),
+})
+
+const orderingUpdateSchema = z.object({
+  ...baseUpdateFields,
+  type: z.literal('ordering'),
+  items: z
+    .array(
+      z.object({
+        content: z.string().min(1, 'El ítem no puede estar vacío'),
+        correct_order: z.number().int().min(1),
+      }),
+    )
+    .min(2, 'Debe haber al menos 2 ítems')
+    .optional(),
+})
+
 export const updateQuestionSchema = z.discriminatedUnion('type', [
-  trueFalseSchema.partial(),
-  multipleChoiceSchema.partial(),
-  matchingSchema.partial(),
-  orderingSchema.partial(),
+  trueFalseUpdateSchema,
+  multipleChoiceUpdateSchema,
+  matchingUpdateSchema,
+  orderingUpdateSchema,
 ])
 
 export type CreateQuestionInput = z.infer<typeof createQuestionSchema>
