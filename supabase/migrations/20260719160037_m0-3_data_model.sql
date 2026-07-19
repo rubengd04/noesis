@@ -121,41 +121,41 @@ ALTER TABLE attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
 
 -- Profiles
-CREATE POLICY "users can view own profile"
+CREATE POLICY IF NOT EXISTS "users can view own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
-CREATE POLICY "users can update own profile"
+CREATE POLICY IF NOT EXISTS "users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
-CREATE POLICY "profiles are publicly viewable"
+CREATE POLICY IF NOT EXISTS "profiles are publicly viewable"
   ON profiles FOR SELECT
   USING (true);
 
 -- Quizzes
-CREATE POLICY "owners can view own quizzes"
+CREATE POLICY IF NOT EXISTS "owners can view own quizzes"
   ON quizzes FOR SELECT
   USING (auth.uid() = author_id);
 
-CREATE POLICY "anyone can view public quizzes"
+CREATE POLICY IF NOT EXISTS "anyone can view public quizzes"
   ON quizzes FOR SELECT
   USING (visibility = 'public');
 
-CREATE POLICY "owners can insert quizzes"
+CREATE POLICY IF NOT EXISTS "owners can insert quizzes"
   ON quizzes FOR INSERT
   WITH CHECK (auth.uid() = author_id);
 
-CREATE POLICY "owners can update own quizzes"
+CREATE POLICY IF NOT EXISTS "owners can update own quizzes"
   ON quizzes FOR UPDATE
   USING (auth.uid() = author_id);
 
-CREATE POLICY "owners can delete own quizzes"
+CREATE POLICY IF NOT EXISTS "owners can delete own quizzes"
   ON quizzes FOR DELETE
   USING (auth.uid() = author_id);
 
 -- Questions
-CREATE POLICY "viewable if quiz is accessible"
+CREATE POLICY IF NOT EXISTS "viewable if quiz is accessible"
   ON questions FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM quizzes
@@ -163,7 +163,7 @@ CREATE POLICY "viewable if quiz is accessible"
     AND (quizzes.author_id = auth.uid() OR quizzes.visibility = 'public')
   ));
 
-CREATE POLICY "owners can manage questions"
+CREATE POLICY IF NOT EXISTS "owners can insert questions"
   ON questions FOR INSERT
   WITH CHECK (EXISTS (
     SELECT 1 FROM quizzes
@@ -171,7 +171,7 @@ CREATE POLICY "owners can manage questions"
     AND quizzes.author_id = auth.uid()
   ));
 
-CREATE POLICY "owners can manage questions"
+CREATE POLICY IF NOT EXISTS "owners can update questions"
   ON questions FOR UPDATE
   USING (EXISTS (
     SELECT 1 FROM quizzes
@@ -179,7 +179,7 @@ CREATE POLICY "owners can manage questions"
     AND quizzes.author_id = auth.uid()
   ));
 
-CREATE POLICY "owners can manage questions"
+CREATE POLICY IF NOT EXISTS "owners can delete questions"
   ON questions FOR DELETE
   USING (EXISTS (
     SELECT 1 FROM quizzes
@@ -188,7 +188,7 @@ CREATE POLICY "owners can manage questions"
   ));
 
 -- Question options
-CREATE POLICY "viewable if quiz is accessible"
+CREATE POLICY IF NOT EXISTS "viewable if quiz is accessible"
   ON question_options FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -197,7 +197,7 @@ CREATE POLICY "viewable if quiz is accessible"
     AND (quizzes.author_id = auth.uid() OR quizzes.visibility = 'public')
   ));
 
-CREATE POLICY "owners can manage options"
+CREATE POLICY IF NOT EXISTS "owners can insert options"
   ON question_options FOR INSERT
   WITH CHECK (EXISTS (
     SELECT 1 FROM questions
@@ -206,7 +206,7 @@ CREATE POLICY "owners can manage options"
     AND quizzes.author_id = auth.uid()
   ));
 
-CREATE POLICY "owners can manage options"
+CREATE POLICY IF NOT EXISTS "owners can update options"
   ON question_options FOR UPDATE
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -215,7 +215,7 @@ CREATE POLICY "owners can manage options"
     AND quizzes.author_id = auth.uid()
   ));
 
-CREATE POLICY "owners can manage options"
+CREATE POLICY IF NOT EXISTS "owners can delete options"
   ON question_options FOR DELETE
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -225,7 +225,7 @@ CREATE POLICY "owners can manage options"
   ));
 
 -- Question pairs
-CREATE POLICY "viewable if quiz is accessible"
+CREATE POLICY IF NOT EXISTS "viewable if quiz is accessible"
   ON question_pairs FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -234,7 +234,7 @@ CREATE POLICY "viewable if quiz is accessible"
     AND (quizzes.author_id = auth.uid() OR quizzes.visibility = 'public')
   ));
 
-CREATE POLICY "owners can manage pairs"
+CREATE POLICY IF NOT EXISTS "owners can insert pairs"
   ON question_pairs FOR INSERT
   WITH CHECK (EXISTS (
     SELECT 1 FROM questions
@@ -243,7 +243,7 @@ CREATE POLICY "owners can manage pairs"
     AND quizzes.author_id = auth.uid()
   ));
 
-CREATE POLICY "owners can manage pairs"
+CREATE POLICY IF NOT EXISTS "owners can update pairs"
   ON question_pairs FOR UPDATE
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -252,7 +252,7 @@ CREATE POLICY "owners can manage pairs"
     AND quizzes.author_id = auth.uid()
   ));
 
-CREATE POLICY "owners can manage pairs"
+CREATE POLICY IF NOT EXISTS "owners can delete pairs"
   ON question_pairs FOR DELETE
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -262,7 +262,7 @@ CREATE POLICY "owners can manage pairs"
   ));
 
 -- Question items
-CREATE POLICY "viewable if quiz is accessible"
+CREATE POLICY IF NOT EXISTS "viewable if quiz is accessible"
   ON question_items FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -271,7 +271,7 @@ CREATE POLICY "viewable if quiz is accessible"
     AND (quizzes.author_id = auth.uid() OR quizzes.visibility = 'public')
   ));
 
-CREATE POLICY "owners can manage items"
+CREATE POLICY IF NOT EXISTS "owners can insert items"
   ON question_items FOR INSERT
   WITH CHECK (EXISTS (
     SELECT 1 FROM questions
@@ -280,7 +280,7 @@ CREATE POLICY "owners can manage items"
     AND quizzes.author_id = auth.uid()
   ));
 
-CREATE POLICY "owners can manage items"
+CREATE POLICY IF NOT EXISTS "owners can update items"
   ON question_items FOR UPDATE
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -289,7 +289,7 @@ CREATE POLICY "owners can manage items"
     AND quizzes.author_id = auth.uid()
   ));
 
-CREATE POLICY "owners can manage items"
+CREATE POLICY IF NOT EXISTS "owners can delete items"
   ON question_items FOR DELETE
   USING (EXISTS (
     SELECT 1 FROM questions
@@ -299,20 +299,20 @@ CREATE POLICY "owners can manage items"
   ));
 
 -- Attempts
-CREATE POLICY "users can view own attempts"
+CREATE POLICY IF NOT EXISTS "users can view own attempts"
   ON attempts FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "users can insert own attempts"
+CREATE POLICY IF NOT EXISTS "users can insert own attempts"
   ON attempts FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "users can update own attempts"
+CREATE POLICY IF NOT EXISTS "users can update own attempts"
   ON attempts FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Answers
-CREATE POLICY "users can view own answers"
+CREATE POLICY IF NOT EXISTS "users can view own answers"
   ON answers FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM attempts
@@ -320,7 +320,7 @@ CREATE POLICY "users can view own answers"
     AND attempts.user_id = auth.uid()
   ));
 
-CREATE POLICY "users can insert own answers"
+CREATE POLICY IF NOT EXISTS "users can insert own answers"
   ON answers FOR INSERT
   WITH CHECK (EXISTS (
     SELECT 1 FROM attempts
