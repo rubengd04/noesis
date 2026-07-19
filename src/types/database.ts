@@ -2,6 +2,7 @@ export type Language = 'es' | 'en'
 export type QuizVisibility = 'private' | 'public'
 export type QuestionType = 'true-false' | 'multiple-choice' | 'matching' | 'ordering'
 export type AttemptStatus = 'in-progress' | 'completed' | 'abandoned'
+export type ScoringMode = 'all-or-nothing' | 'partial'
 
 export interface Profile {
   id: string
@@ -19,6 +20,7 @@ export interface Quiz {
   language: Language
   visibility: QuizVisibility
   shuffle_questions: boolean
+  scoring_mode: ScoringMode
   max_attempts: number | null
   time_limit_minutes: number | null
   pass_percentage: number
@@ -72,6 +74,7 @@ export interface Attempt {
   score: number | null
   max_score: number | null
   time_seconds: number | null
+  question_order: string[] | null
   started_at: string
   completed_at: string | null
   created_at: string
