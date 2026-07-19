@@ -28,6 +28,7 @@ export function QuizSettings({ quiz }: QuizSettingsProps) {
   const [language, setLanguage] = useState(quiz.language)
   const [visibility, setVisibility] = useState(quiz.visibility)
   const [shuffle, setShuffle] = useState(quiz.shuffle_questions)
+  const [scoringMode, setScoringMode] = useState(quiz.scoring_mode)
   const [maxAttempts, setMaxAttempts] = useState(quiz.max_attempts?.toString() ?? '')
   const [timeLimit, setTimeLimit] = useState(quiz.time_limit_minutes?.toString() ?? '')
   const [passPercentage, setPassPercentage] = useState(quiz.pass_percentage)
@@ -49,6 +50,7 @@ export function QuizSettings({ quiz }: QuizSettingsProps) {
           language,
           visibility,
           shuffle_questions: shuffle,
+          scoring_mode: scoringMode,
           max_attempts: maxAttempts ? parseInt(maxAttempts, 10) : null,
           time_limit_minutes: timeLimit ? parseInt(timeLimit, 10) : null,
           pass_percentage: passPercentage,
@@ -126,6 +128,19 @@ export function QuizSettings({ quiz }: QuizSettingsProps) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="scoringMode">Puntuación</Label>
+            <Select value={scoringMode} onValueChange={(v) => v && setScoringMode(v)}>
+              <SelectTrigger id="scoringMode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-or-nothing">Todo o nada</SelectItem>
+                <SelectItem value="partial">Puntuación parcial</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -10,6 +10,7 @@ interface QuizCardProps {
 export function QuizCard({ quiz }: QuizCardProps) {
   const visibilityLabel = quiz.visibility === 'public' ? 'Público' : 'Privado'
   const langLabel = quiz.language === 'es' ? 'ES' : 'EN'
+  const scoringLabel = quiz.scoring_mode === 'all-or-nothing' ? 'Todo/Nada' : 'Parcial'
 
   return (
     <Link href={`/dashboard/quizzes/${quiz.id}`}>
@@ -28,6 +29,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
               {visibilityLabel}
             </Badge>
             <Badge variant="outline">{langLabel}</Badge>
+            <Badge variant="outline">{scoringLabel}</Badge>
           </div>
         </CardContent>
       </Card>
