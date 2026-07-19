@@ -19,7 +19,7 @@ export function QuestionList({ quizId, questions: initial }: QuestionListProps) 
   const [questions, setQuestions] = useState(initial)
   const [editing, setEditing] = useState<Question | null>(null)
   const [creating, setCreating] = useState(false)
-  const [deleting, setDeleting] = useState<string | null>(null)
+  const [, setDeleting] = useState<string | null>(null)
 
   const handleDelete = async (questionId: string) => {
     if (!confirm('¿Eliminar esta pregunta? Esta acción no se puede deshacer.')) return

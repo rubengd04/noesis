@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,12 +27,11 @@ interface QuestionEditorProps {
 
 export function QuestionEditor({ quizId, initialData, onSave }: QuestionEditorProps) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [type, setType] = useState<QuestionType>(initialData?.type ?? 'multiple-choice')
   const [content, setContent] = useState(initialData?.content ?? '')
   const [difficulty, setDifficulty] = useState(initialData?.difficulty ?? 1)
-  const [points, setPoints] = useState(initialData?.points ?? 1)
+  const [points] = useState(initialData?.points ?? 1)
   const [explanation, setExplanation] = useState(initialData?.explanation ?? '')
   const [hint, setHint] = useState(initialData?.hint ?? '')
   const [saving, setSaving] = useState(false)
