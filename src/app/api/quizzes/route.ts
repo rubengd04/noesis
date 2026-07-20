@@ -81,32 +81,22 @@ export async function GET(request: NextRequest) {
   const toOffset = fromOffset + limit - 1
   const { column, ascending } = parseSort(sort)
 
-  let query = supabase.from('quizzes').select('*', { count: 'exact', head: false })
-  let countQuery = supabase.from('quizzes').select('*', { count: 'exact', head: true })
-
-  query = query.eq('author_id', user.id)
-  countQuery = countQuery.eq('author_id', user.id)
+  let query = supabase
+    .from('quizzes')
+    .select('*', { count: 'exact', head: false })
+    .eq('author_id', user.id)
 
   if (search) {
     query = query.ilike('title', `%${search}%`)
-    countQuery = countQuery.ilike('title', `%${search}%`)
   }
   if (language) {
     query = query.eq('language', language)
-    countQuery = countQuery.eq('language', language)
   }
   if (visibility) {
     query = query.eq('visibility', visibility)
-    countQuery = countQuery.eq('visibility', visibility)
   }
 
-  const { count: total, error: countError } = await countQuery
-
-  if (countError) {
-    return NextResponse.json({ error: countError.message }, { status: 500 })
-  }
-
-  const { data, error } = await query
+  const { data, error, count: total } = await query
     .order(column, { ascending })
     .range(fromOffset, toOffset)
 
