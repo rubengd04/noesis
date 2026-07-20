@@ -5,6 +5,8 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { QuizSettings } from '@/components/quizzes/quiz-settings'
 import { QuestionList } from '@/components/questions/question-list'
+import { QuizAttemptHistory } from '@/components/quizzes/quiz-attempt-history'
+import { QuizHeaderClient } from './quiz-header-client'
 import Link from 'next/link'
 
 export default async function QuizDetailPage({
@@ -38,7 +40,6 @@ export default async function QuizDetailPage({
     .eq('quiz_id', id)
     .order('order_index')
 
-  // Count completed attempts for this user
   const { count: completedCount } = await supabase
     .from('attempts')
     .select('*', { count: 'exact', head: true })
@@ -50,9 +51,45 @@ export default async function QuizDetailPage({
     ? Math.max(0, quiz.max_attempts - (completedCount ?? 0))
     : null
 
+  const visibilityLabel = quiz.visibility === 'public' ? 'Público' : 'Privado'
+  const scoringLabel = quiz.scoring_mode === 'all-or-nothing' ? 'Todo o nada' : 'Puntuación parcial'
+  const langLabel = quiz.language === 'es' ? 'ES' : 'EN'
+  const createdDate = new Date(quiz.created_at).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+
   return (
     <div className="space-y-8">
-      <QuizSettings quiz={quiz} />
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold">{quiz.title}</h1>
+            {quiz.description && (
+              <p className="text-sm text-muted-foreground">{quiz.description}</p>
+            )}
+            <p className="text-xs text-muted-foreground">Creado el {createdDate}</p>
+          </div>
+          <QuizHeaderClient quizId={id} />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline">{questions?.length ?? 0} preguntas</Badge>
+          <Badge variant="outline">{scoringLabel}</Badge>
+          <Badge variant={quiz.visibility === 'public' ? 'default' : 'secondary'}>
+            {visibilityLabel}
+          </Badge>
+          <Badge variant="outline">{langLabel}</Badge>
+          {quiz.time_limit_minutes && (
+            <Badge variant="outline">{quiz.time_limit_minutes} min</Badge>
+          )}
+        </div>
+      </div>
+
+      <div data-quiz-settings>
+        <QuizSettings quiz={quiz} />
+      </div>
 
       <section className="rounded-lg border p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -72,14 +109,14 @@ export default async function QuizDetailPage({
         </div>
         <div className="flex gap-2">
           <Badge variant="outline">{questions?.length ?? 0} preguntas</Badge>
-          <Badge variant="outline">
-            {quiz.scoring_mode === 'all-or-nothing' ? 'Todo o nada' : 'Puntuación parcial'}
-          </Badge>
+          <Badge variant="outline">{scoringLabel}</Badge>
           {quiz.time_limit_minutes && (
             <Badge variant="outline">{quiz.time_limit_minutes} min</Badge>
           )}
         </div>
       </section>
+
+      <QuizAttemptHistory quizId={id} />
 
       <Separator />
 
