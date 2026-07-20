@@ -1,12 +1,11 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { QuizSettings } from '@/components/quizzes/quiz-settings'
 import { QuestionList } from '@/components/questions/question-list'
+import Link from 'next/link'
 
 export default async function QuizDetailPage({
   params,
@@ -30,7 +29,7 @@ export default async function QuizDetailPage({
     .single()
 
   if (!quiz) {
-    redirect('/dashboard')
+    redirect('/quizzes')
   }
 
   const { data: questions } = await supabase
@@ -53,16 +52,6 @@ export default async function QuizDetailPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Mis Quizzes
-        </Link>
-      </div>
-
       <QuizSettings quiz={quiz} />
 
       <section className="rounded-lg border p-4 space-y-3">

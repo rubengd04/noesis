@@ -86,7 +86,7 @@ export function AttemptHistorySummary() {
             </div>
 
             <Link
-              href="/dashboard/history"
+              href="/history"
               className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Ver historial completo
