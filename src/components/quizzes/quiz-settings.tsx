@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -59,11 +60,14 @@ export function QuizSettings({ quiz }: QuizSettingsProps) {
 
       if (!res.ok) {
         const body = await res.json()
-        setMessage(body.error ?? 'Error al guardar')
+        const errMsg = body.error ?? 'Error al guardar'
+        setMessage(errMsg)
+        toast.error(errMsg)
         return
       }
 
       setMessage('Guardado')
+      toast.success('Quiz actualizado correctamente')
       router.refresh()
     } catch {
       setMessage('Error de conexión')

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -78,10 +79,13 @@ export function QuestionEditor({ quizId, initialData, onSave }: QuestionEditorPr
       )
       if (!res.ok) {
         const err = await res.json()
-        setError(err.error ?? 'Error al actualizar')
+        const msg = err.error ?? 'Error al actualizar'
+        setError(msg)
+        toast.error(msg)
         setSaving(false)
         return
       }
+      toast.success('Pregunta actualizada')
     } else {
       const res = await fetch(`/api/quizzes/${quizId}/questions`, {
         method: 'POST',
@@ -90,10 +94,13 @@ export function QuestionEditor({ quizId, initialData, onSave }: QuestionEditorPr
       })
       if (!res.ok) {
         const err = await res.json()
-        setError(err.error ?? 'Error al crear')
+        const msg = err.error ?? 'Error al crear'
+        setError(msg)
+        toast.error(msg)
         setSaving(false)
         return
       }
+      toast.success('Pregunta creada')
     }
 
     router.refresh()

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,15 +30,20 @@ export function CreateQuizForm({ onSuccess, onCancel }: CreateQuizFormProps) {
 
       if (!res.ok) {
         const body = await res.json()
-        setError(body.error ?? 'Error al crear el quiz')
+        const msg = body.error ?? 'Error al crear el quiz'
+        setError(msg)
+        toast.error(msg)
         return
       }
 
       const quiz = await res.json()
       setTitle('')
+      toast.success('Quiz creado correctamente')
       onSuccess?.(quiz.id)
     } catch {
-      setError('Error de conexión')
+      const msg = 'Error de conexión'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }

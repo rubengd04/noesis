@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import type { AnswerValue } from '@/types/database'
 import { QuestionRenderer } from '@/components/attempt/question-renderer'
@@ -36,6 +37,32 @@ export default function AttemptSessionPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const submitted = useRef(false)
+
+  // Exit confirmation
+  useEffect(() => {
+    if (submitted.current) return
+    if (Object.keys(answers).length === 0) return
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+
+    const handlePopState = () => {
+      const confirmed = window.confirm('¿Estás seguro? Si sales perderás tus respuestas.')
+      if (!confirmed) {
+        window.history.pushState(null, '', window.location.href)
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('popstate', handlePopState)
+    window.history.pushState(null, '', window.location.href)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [answers])
 
   useEffect(() => {
     async function load() {
@@ -76,13 +103,16 @@ export default function AttemptSessionPage() {
       if (!res.ok) {
         const body = await res.json()
         setError(body.error ?? 'Error al enviar')
+        toast.error(body.error ?? 'Error al enviar')
         setSubmitting(false)
         submitted.current = false
         return
       }
+      toast.success('Intento enviado correctamente')
       router.push(`/quiz/${quizId}/attempt/${attemptId}/results`)
     } catch {
       setError('Error de conexión')
+      toast.error('Error de conexión')
       setSubmitting(false)
       submitted.current = false
     }
