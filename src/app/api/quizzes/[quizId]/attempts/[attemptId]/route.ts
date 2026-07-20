@@ -109,6 +109,11 @@ export async function GET(
     : 100
   const passed = percentage >= quiz.pass_percentage
 
+  const userAnswers = (answers ?? []).map((a) => ({
+    questionId: a.question_id,
+    answer: a.answer,
+  }))
+
   return NextResponse.json({
     attempt,
     results: scoringResult.results,
@@ -117,5 +122,6 @@ export async function GET(
     percentage,
     passed,
     questions: orderedQuestions,
+    userAnswers,
   })
 }
