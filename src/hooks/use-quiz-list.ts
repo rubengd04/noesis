@@ -74,7 +74,7 @@ export function useQuizList() {
     (next: { search: string; language: LanguageFilter; visibility: VisibilityFilter; sort: QuizSort; page: number }) => {
       const sp = buildParams(next)
       const qs = sp.toString()
-      const url = qs ? `/dashboard?${qs}` : '/dashboard'
+      const url = qs ? `/quizzes?${qs}` : '/quizzes'
       router.replace(url, { scroll: false })
     },
     [router],
