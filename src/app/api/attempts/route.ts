@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+interface AttemptRow {
+  id: string
+  quiz_id: string
+  score: number
+  max_score: number
+  time_seconds: number | null
+  completed_at: string
+  created_at: string
+  quizzes: {
+    id: string
+    title: string
+    scoring_mode: string
+    pass_percentage: number
+  } | null
+}
+
+interface ScoreRow {
+  score: number
+  max_score: number
+  quiz_id: string
+}
+
 const VALID_STATUSES = ['passed', 'failed', 'all'] as const
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 20
@@ -68,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  let rows = (attempts ?? []).map((a: any) => {
+  let rows = (attempts ?? []).map((a: AttemptRow) => {
     const quiz = a.quizzes
     const percentage = Math.round((a.score / a.max_score) * 1000) / 10
     const ansStats = answerCounts.get(a.id)
@@ -119,7 +141,7 @@ export async function GET(request: NextRequest) {
   let summary = { totalAttempts: 0, avgPercentage: 0, passCount: 0, passRate: 0 }
 
   if (allScores && allScores.length > 0) {
-    const allQuizIds = [...new Set(allScores.map((s: any) => s.quiz_id))]
+    const allQuizIds = [...new Set(allScores.map((s: ScoreRow) => s.quiz_id))]
     const { data: quizMap } = await supabase
       .from('quizzes')
       .select('id, pass_percentage')

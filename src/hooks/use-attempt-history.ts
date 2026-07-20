@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, startTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { AttemptSummary, HistorySummary, HistoryStatusFilter } from '@/types/api'
 
@@ -59,7 +59,7 @@ export function useAttemptHistory() {
     (next: { search: string; status: HistoryStatusFilter; date_from: string | null; date_to: string | null; page: number }) => {
       const sp = buildParams(next)
       const qs = sp.toString()
-      const url = qs ? `/dashboard/history?${qs}` : '/dashboard/history'
+      const url = qs ? `/history?${qs}` : '/history'
       router.replace(url, { scroll: false })
     },
     [router],
@@ -76,20 +76,46 @@ export function useAttemptHistory() {
         throw new Error(body.error ?? 'Error al cargar historial')
       }
       const json = await res.json()
-      setData(json.data)
-      setTotal(json.total)
-      if (json.summary) {
-        setSummary(json.summary)
-      }
+      startTransition(() => {
+        setData(json.data)
+        setTotal(json.total)
+        if (json.summary) setSummary(json.summary)
+      })
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
+      startTransition(() => {
+        setError(err instanceof Error ? err.message : 'Error desconocido')
+      })
     }
   }
 
   useEffect(() => {
-    fetchData({ search, status: statusFilter, date_from: dateFrom, date_to: dateTo, page }).then(() => {
-      setLoading(false)
-    })
+    const load = async () => {
+      const sp = buildParams({ search, status: statusFilter, date_from: dateFrom, date_to: dateTo, page })
+      try {
+        const res = await fetch(`/api/attempts?${sp.toString()}`)
+        if (res.ok) {
+          const json = await res.json()
+          startTransition(() => {
+            setData(json.data)
+            setTotal(json.total)
+            if (json.summary) setSummary(json.summary)
+            setLoading(false)
+          })
+        } else {
+          const body = await res.json()
+          startTransition(() => {
+            setError(body.error ?? 'Error al cargar historial')
+            setLoading(false)
+          })
+        }
+      } catch {
+        startTransition(() => {
+          setError('Error de conexión')
+          setLoading(false)
+        })
+      }
+    }
+    load()
     initialLoadDone.current = true
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -97,22 +123,18 @@ export function useAttemptHistory() {
   useEffect(() => {
     if (!initialLoadDone.current) return
 
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current)
-    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
 
     debounceRef.current = setTimeout(() => {
       syncUrl({ search, status: statusFilter, date_from: dateFrom, date_to: dateTo, page })
       setLoading(true)
-      fetchData({ search, status: statusFilter, date_from: dateFrom, date_to: dateTo, page }).then(() => {
-        setLoading(false)
+      fetchData({ search, status: statusFilter, date_from: dateFrom, date_to: dateTo, page }).finally(() => {
+        startTransition(() => setLoading(false))
       })
     }, 300)
 
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current)
-      }
+      if (debounceRef.current) clearTimeout(debounceRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
@@ -120,14 +142,12 @@ export function useAttemptHistory() {
   useEffect(() => {
     if (!initialLoadDone.current) return
 
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current)
-    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
 
     syncUrl({ search, status: statusFilter, date_from: dateFrom, date_to: dateTo, page })
     setLoading(true)
-    fetchData({ search, status: statusFilter, date_from: dateFrom, date_to: dateTo, page }).then(() => {
-      setLoading(false)
+    fetchData({ search, status: statusFilter, date_from: dateFrom, date_to: dateTo, page }).finally(() => {
+      startTransition(() => setLoading(false))
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, dateFrom, dateTo, page])
