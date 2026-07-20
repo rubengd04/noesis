@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { scoreAttempt } from '@/lib/scoring'
-import type { QuestionOption, QuestionPair, QuestionItem } from '@/types/database'
+import type { QuestionOption, QuestionPair, QuestionItem, AnswerValue } from '@/types/database'
 
 export async function GET(
   request: NextRequest,
@@ -99,7 +99,7 @@ export async function GET(
     typeDataMap,
     answers: (answers ?? []).map((a) => ({
       questionId: a.question_id,
-      answer: a.answer as Record<string, unknown>,
+      answer: a.answer as AnswerValue,
     })),
     scoringMode: quiz.scoring_mode,
   })

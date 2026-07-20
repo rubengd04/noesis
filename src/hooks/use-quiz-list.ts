@@ -28,7 +28,7 @@ function buildParams(params: {
   visibility: VisibilityFilter
   sort: QuizSort
   page: number
-  limit: number
+  limit?: number
 }): URLSearchParams {
   const sp = new URLSearchParams()
   if (params.search) sp.set('search', params.search)
@@ -36,7 +36,7 @@ function buildParams(params: {
   if (params.visibility !== 'all') sp.set('visibility', params.visibility)
   if (params.sort !== 'newest') sp.set('sort', params.sort)
   if (params.page > 1) sp.set('page', String(params.page))
-  if (params.limit !== 20) sp.set('limit', String(params.limit))
+  if (params.limit != null && params.limit !== 20) sp.set('limit', String(params.limit))
   return sp
 }
 
@@ -45,14 +45,17 @@ export function useQuizList() {
   const searchParams = useSearchParams()
 
   const [search, setSearchState] = useState(searchParams.get('search') ?? '')
+  const initialLanguage = searchParams.get('language')
   const [language, setLanguageState] = useState<LanguageFilter>(
-    isValidLanguage(searchParams.get('language')) ? searchParams.get('language')! : 'all',
+    isValidLanguage(initialLanguage) ? initialLanguage : 'all',
   )
+  const initialVisibility = searchParams.get('visibility')
   const [visibility, setVisibilityState] = useState<VisibilityFilter>(
-    isValidVisibility(searchParams.get('visibility')) ? searchParams.get('visibility')! : 'all',
+    isValidVisibility(initialVisibility) ? initialVisibility : 'all',
   )
+  const initialSort = searchParams.get('sort')
   const [sort, setSortState] = useState<QuizSort>(
-    isValidSort(searchParams.get('sort')) ? searchParams.get('sort')! : 'newest',
+    isValidSort(initialSort) ? initialSort : 'newest',
   )
   const [page, setPageState] = useState(
     Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1),
