@@ -65,6 +65,7 @@ export function useQuizList() {
   const [error, setError] = useState<string | null>(null)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initialLoadDone = useRef(false)
 
   const syncUrl = useCallback(
     (next: { search: string; language: LanguageFilter; visibility: VisibilityFilter; sort: QuizSort; page: number }) => {
@@ -76,71 +77,48 @@ export function useQuizList() {
     [router],
   )
 
-  const fetchQuizzes = useCallback(
-    async (params: { search: string; language: LanguageFilter; visibility: VisibilityFilter; sort: QuizSort; page: number }) => {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const sp = buildParams(params)
-        const res = await fetch(`/api/quizzes?${sp.toString()}`)
-
+  function fetchData(
+    params: { search: string; language: LanguageFilter; visibility: VisibilityFilter; sort: QuizSort; page: number },
+  ) {
+    const sp = buildParams(params)
+    return fetch(`/api/quizzes?${sp.toString()}`)
+      .then(async (res) => {
         if (!res.ok) {
           const body = await res.json()
-          setError(body.error ?? 'Error al cargar quizzes')
-          return
+          throw new Error(body.error ?? 'Error al cargar quizzes')
         }
-
-        const json: PaginatedResponse<Quiz> = await res.json()
+        return res.json() as Promise<PaginatedResponse<Quiz>>
+      })
+      .then((json) => {
         setData(json.data)
         setTotal(json.total)
-      } catch {
-        setError('Error de conexión')
-      } finally {
-        setLoading(false)
-      }
-    },
-    [],
-  )
+      })
+      .catch((err: Error) => {
+        setError(err.message)
+      })
+  }
 
   useEffect(() => {
-    const sp = new URLSearchParams(window.location.search)
-    const initialSearch = sp.get('search') ?? ''
-    const initialLanguage: LanguageFilter = isValidLanguage(sp.get('language'))
-      ? sp.get('language')!
-      : 'all'
-    const initialVisibility: VisibilityFilter = isValidVisibility(sp.get('visibility'))
-      ? sp.get('visibility')!
-      : 'all'
-    const initialSort: QuizSort = isValidSort(sp.get('sort'))
-      ? sp.get('sort')!
-      : 'newest'
-    const initialPage = Math.max(1, parseInt(sp.get('page') ?? '1', 10) || 1)
-
-    setSearchState(initialSearch)
-    setLanguageState(initialLanguage)
-    setVisibilityState(initialVisibility)
-    setSortState(initialSort)
-    setPageState(initialPage)
-
-    fetchQuizzes({
-      search: initialSearch,
-      language: initialLanguage,
-      visibility: initialVisibility,
-      sort: initialSort,
-      page: initialPage,
+    fetchData({ search, language, visibility, sort, page }).then(() => {
+      setLoading(false)
     })
+    initialLoadDone.current = true
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
+    if (!initialLoadDone.current) return
+
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
     }
 
     debounceRef.current = setTimeout(() => {
       syncUrl({ search, language, visibility, sort, page })
-      fetchQuizzes({ search, language, visibility, sort, page })
+      setLoading(true)
+      fetchData({ search, language, visibility, sort, page }).then(() => {
+        setLoading(false)
+      })
     }, 300)
 
     return () => {
@@ -152,12 +130,17 @@ export function useQuizList() {
   }, [search])
 
   useEffect(() => {
+    if (!initialLoadDone.current) return
+
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
     }
 
     syncUrl({ search, language, visibility, sort, page })
-    fetchQuizzes({ search, language, visibility, sort, page })
+    setLoading(true)
+    fetchData({ search, language, visibility, sort, page }).then(() => {
+      setLoading(false)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, visibility, sort, page])
 
