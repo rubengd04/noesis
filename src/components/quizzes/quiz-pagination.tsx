@@ -9,6 +9,7 @@ interface QuizPaginationProps {
   total: number
   limit: number
   onPageChange: (page: number) => void
+  label?: string
 }
 
 function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
@@ -35,6 +36,7 @@ export function QuizPagination({
   total,
   limit,
   onPageChange,
+  label = 'quizzes',
 }: QuizPaginationProps) {
   if (totalPages <= 1) return null
 
@@ -44,7 +46,7 @@ export function QuizPagination({
   return (
     <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
       <p className="text-sm text-muted-foreground">
-        {from}-{to} de {total} quizzes
+        {from}-{to} de {total} {label}
       </p>
 
       <nav className="flex items-center gap-1" aria-label="Paginación">
