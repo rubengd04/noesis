@@ -9,12 +9,12 @@ interface AttemptRow {
   time_seconds: number | null
   completed_at: string
   created_at: string
-  quizzes: {
+  quizzes: Array<{
     id: string
     title: string
     scoring_mode: string
     pass_percentage: number
-  } | null
+  }>
 }
 
 interface ScoreRow {
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
   }
 
   let rows = (attempts ?? []).map((a: AttemptRow) => {
-    const quiz = a.quizzes
+    const quiz = a.quizzes?.[0] ?? null
     const percentage = Math.round((a.score / a.max_score) * 1000) / 10
     const ansStats = answerCounts.get(a.id)
     return {

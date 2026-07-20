@@ -13,7 +13,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
   const scoringLabel = quiz.scoring_mode === 'all-or-nothing' ? 'Todo/Nada' : 'Parcial'
 
   return (
-    <Link href={`/dashboard/quizzes/${quiz.id}`}>
+    <Link href={`/quizzes/${quiz.id}`}>
       <Card className="cursor-pointer transition-colors hover:bg-accent/50">
         <CardContent className="flex items-center justify-between p-4">
           <div className="space-y-1">
