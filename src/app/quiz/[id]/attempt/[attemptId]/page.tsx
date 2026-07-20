@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import type { AnswerValue } from '@/types/database'
-import { AttemptTimer } from '@/components/attempt/attempt-timer'
 import { QuestionRenderer } from '@/components/attempt/question-renderer'
 import { QuestionNavigator } from '@/components/attempt/question-navigator'
 
@@ -101,10 +100,6 @@ export default function AttemptSessionPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pt-8">
-      {timeLimit && (
-        <AttemptTimer timeLimitMinutes={timeLimit} onExpire={doSubmit} />
-      )}
-
       <Card>
         <CardContent className="p-6">
           <QuestionRenderer
@@ -120,10 +115,12 @@ export default function AttemptSessionPage() {
         currentIndex={currentIndex}
         totalCount={questions.length}
         answeredIndices={answeredIndices}
+        timeLimitMinutes={timeLimit ?? undefined}
         onPrevious={() => setCurrentIndex((i) => Math.max(0, i - 1))}
         onNext={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
         onSubmit={doSubmit}
         submitting={submitting}
+        onTimeExpire={doSubmit}
       />
     </div>
   )
