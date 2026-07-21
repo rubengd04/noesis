@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT))
   const search = searchParams.get('search')?.trim() || undefined
   const statusFilter = searchParams.get('status') || 'all'
+  const quizId = searchParams.get('quizId')?.trim() || undefined
   const dateFrom = searchParams.get('date_from') || undefined
   const dateTo = searchParams.get('date_to') || undefined
 
@@ -59,6 +60,10 @@ export async function GET(request: NextRequest) {
     .eq('status', 'completed')
     .not('max_score', 'is', null)
     .gt('max_score', 0)
+
+  if (quizId) {
+    query = query.eq('quiz_id', quizId)
+  }
 
   if (dateFrom) {
     query = query.gte('completed_at', dateFrom)
@@ -132,6 +137,10 @@ export async function GET(request: NextRequest) {
     .eq('status', 'completed')
     .not('max_score', 'is', null)
     .gt('max_score', 0)
+
+  if (quizId) {
+    summaryQuery = summaryQuery.eq('quiz_id', quizId)
+  }
 
   if (dateFrom) summaryQuery = summaryQuery.gte('completed_at', dateFrom)
   if (dateTo) summaryQuery = summaryQuery.lte('completed_at', `${dateTo}T23:59:59.999Z`)
