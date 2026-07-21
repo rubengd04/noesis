@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Card, CardContent } from '@/components/ui/card'
+import { Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { AnswerValue } from '@/types/database'
 import { QuestionRenderer } from '@/components/attempt/question-renderer'
 import { QuestionNavigator } from '@/components/attempt/question-navigator'
@@ -118,6 +119,14 @@ export default function AttemptSessionPage() {
     }
   }, [quizId, attemptId, answers, router])
 
+  const goNext = useCallback(() => {
+    setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))
+  }, [questions.length])
+
+  const goPrevious = useCallback(() => {
+    setCurrentIndex((i) => Math.max(0, i - 1))
+  }, [])
+
   if (error) {
     return <div className="flex justify-center pt-12 text-destructive">{error}</div>
   }
@@ -127,31 +136,53 @@ export default function AttemptSessionPage() {
   }
 
   const question = questions[currentIndex]
+  const progress = currentIndex / questions.length * 100
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pt-8">
-      <Card>
-        <CardContent className="p-6">
-          <QuestionRenderer
-            question={question}
-            answer={answers[question.id] ?? null}
-            onAnswer={handleAnswer}
-            disabled={submitting}
+    <div className="max-w-2xl mx-auto flex flex-col gap-6 py-8">
+      {/* Progress header */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-brand rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
           />
-        </CardContent>
-      </Card>
+        </div>
+        <span className="text-sm text-muted-foreground shrink-0 tabular-nums">
+          {currentIndex + 1} / {questions.length}
+        </span>
+      </div>
 
-      <QuestionNavigator
-        currentIndex={currentIndex}
-        totalCount={questions.length}
-        answeredIndices={answeredIndices}
-        timeLimitMinutes={timeLimit ?? undefined}
-        onPrevious={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-        onNext={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
-        onSubmit={doSubmit}
-        submitting={submitting}
-        onTimeExpire={doSubmit}
+      {/* Question card */}
+      <QuestionRenderer
+        question={question}
+        answer={answers[question.id] ?? null}
+        onAnswer={handleAnswer}
+        disabled={submitting}
+        onNext={currentIndex < questions.length - 1 ? goNext : doSubmit}
+        isLast={currentIndex === questions.length - 1}
       />
+
+      {/* Navigation footer */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={goPrevious}
+          disabled={currentIndex === 0}
+        >
+          Anterior
+        </Button>
+
+        <QuestionNavigator
+          timeLimitMinutes={timeLimit ?? undefined}
+          answeredCount={answeredIndices.size}
+          totalCount={questions.length}
+          submitting={submitting}
+          onSubmit={doSubmit}
+          onTimeExpire={doSubmit}
+          currentIndex={currentIndex}
+        />
+      </div>
     </div>
   )
 }

@@ -42,32 +42,64 @@ export async function POST(
     }
   }
 
+  // Parse optional config from body
+  let filterDifficulty: number | null = null
+  let limitCount: number | null = null
+  try {
+    const body = await request.json()
+    if (body.difficulty && body.difficulty !== 'Mixta') {
+      const diffMap: Record<string, number> = { Fácil: 1, Medio: 2, Difícil: 3 }
+      filterDifficulty = diffMap[body.difficulty] ?? null
+    }
+    if (typeof body.questionCount === 'number' && body.questionCount > 0) {
+      limitCount = body.questionCount
+    }
+  } catch {
+    // No body — use all questions
+  }
+
   // Fetch questions with type-specific data
-  const { data: questions, error: questionsError } = await supabase
+  let query = supabase
     .from('questions')
     .select('*, question_options(*), question_pairs(*), question_items(*)')
     .eq('quiz_id', quizId)
-    .order('order_index')
+
+  if (filterDifficulty !== null) {
+    query = query.eq('difficulty', filterDifficulty)
+  }
+
+  const { data: questions, error: questionsError } = await query.order('order_index')
 
   if (questionsError) {
     return NextResponse.json({ error: questionsError.message }, { status: 500 })
   }
 
+  // Pick a random subset if limitCount is set
+  let selectedQuestions = questions
+  if (limitCount !== null && limitCount < questions.length) {
+    const shuffled = [...questions]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    selectedQuestions = shuffled.slice(0, limitCount)
+  }
+
   // Shuffle if enabled
   let questionOrder: string[] | null = null
-  if (quiz.shuffle_questions && questions.length > 0) {
-    const indices = questions.map((_, i) => i)
+  if (quiz.shuffle_questions && selectedQuestions.length > 0) {
+    const indices = selectedQuestions.map((_, i) => i)
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[indices[i], indices[j]] = [indices[j], indices[i]]
     }
-    const shuffled = indices.map((i) => questions[i])
+    const shuffled = indices.map((i) => selectedQuestions[i])
     questionOrder = shuffled.map((q) => q.id)
 
-    // Reorder in-place for the response (uses question_order for persistence)
-    questions.splice(0, questions.length, ...shuffled)
+    // Reorder in-place for the response
+    selectedQuestions.splice(0, selectedQuestions.length, ...shuffled)
   } else {
-    questionOrder = questions.map((q) => q.id)
+    questionOrder = selectedQuestions.map((q) => q.id)
   }
 
   // Create attempt
@@ -87,7 +119,7 @@ export async function POST(
   }
 
   // Strip correct answers from response
-  const sanitizedQuestions = questions.map((q) => {
+  const sanitizedQuestions = selectedQuestions.map((q) => {
     const { question_options: opts, question_pairs: pairs, question_items: items, ...rest } = q
     return {
       ...rest,

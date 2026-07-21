@@ -13,7 +13,7 @@ export default function AttemptStartPage() {
     time_limit_minutes: number | null
     scoring_mode: string
   } | null>(null)
-  const [questionCount, setQuestionCount] = useState(0)
+  const [totalQuestions, setTotalQuestions] = useState(0)
   const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
@@ -34,17 +34,21 @@ export default function AttemptStartPage() {
         time_limit_minutes: data.time_limit_minutes,
         scoring_mode: data.scoring_mode,
       })
-      setQuestionCount(data._questionCount ?? 0)
+      setTotalQuestions(data._questionCount ?? 0)
       setAttemptsLeft(data.max_attempts ?? null)
       setLoading(false)
     }
     load()
   }, [id])
 
-  const handleStart = async () => {
+  const handleStart = async (config: { questionCount: number; difficulty: string }) => {
     setStarting(true)
     try {
-      const res = await fetch(`/api/quizzes/${id}/attempts`, { method: 'POST' })
+      const res = await fetch(`/api/quizzes/${id}/attempts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      })
       if (!res.ok) {
         const body = await res.json()
         setError(body.error ?? 'Error al comenzar')
@@ -70,7 +74,7 @@ export default function AttemptStartPage() {
   return (
     <AttemptStart
       quiz={quiz}
-      questionCount={questionCount}
+      totalQuestions={totalQuestions}
       attemptsLeft={attemptsLeft}
       onStart={handleStart}
       loading={starting}
