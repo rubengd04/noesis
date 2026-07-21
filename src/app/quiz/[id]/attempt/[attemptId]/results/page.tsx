@@ -5,8 +5,8 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { CheckCircle2, XCircle, ChevronDown, ChevronRight } from 'lucide-react'
+import { Check, X, ChevronDown, Trophy, Zap, Target, BookOpen, RotateCcw, BarChart2, Lightbulb } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { AnswerValue } from '@/types/database'
 
 interface ResultAnswer {
@@ -33,6 +33,7 @@ interface ResultData {
     content: string
     points: number
     explanation: string | null
+    difficulty: number
     question_options?: { id: string; content: string; is_correct: boolean; order_index: number }[]
     question_pairs?: { id: string; left_text: string; right_text: string; order_index: number }[]
     question_items?: { id: string; content: string; correct_order: number; order_index: number }[]
@@ -79,6 +80,7 @@ export default function ResultsPage() {
   const timeSeconds = data.attempt.time_seconds
   const minutes = timeSeconds ? Math.floor(timeSeconds / 60) : null
   const seconds = timeSeconds ? timeSeconds % 60 : null
+  const incorrect = maxScore - totalScore
 
   const resultByQuestionId = new Map(results.map((r) => [r.questionId, r]))
   const userAnswerByQuestionId = new Map(
@@ -86,94 +88,132 @@ export default function ResultsPage() {
       .userAnswers?.map((ua) => [ua.questionId, ua.answer]) ?? [],
   )
 
+  const gradeConfig =
+    percentage === 100
+      ? { label: 'Perfecto', sub: 'Respondiste todo correctamente.', color: 'text-chart-3', ring: 'text-chart-3', icon: Trophy }
+      : percentage >= 80
+        ? { label: 'Excelente', sub: 'Gran resultado, sigue así.', color: 'text-brand', ring: 'text-brand', icon: Zap }
+        : percentage >= 60
+          ? { label: 'Bien', sub: 'Vas por buen camino.', color: 'text-chart-4', ring: 'text-chart-4', icon: Target }
+          : { label: 'Sigue practicando', sub: 'Revisa las respuestas y vuelve a intentarlo.', color: 'text-chart-5', ring: 'text-chart-5', icon: BookOpen }
+
+  const GradeIcon = gradeConfig.icon
+  const circumference = 2 * Math.PI * 54
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pt-8">
-      <div className="text-center space-y-4">
-        <div className={`inline-flex rounded-full p-3 ${passed ? 'bg-green-100' : 'bg-red-100'}`}>
-          {passed ? (
-            <CheckCircle2 className="h-12 w-12 text-green-600" />
-          ) : (
-            <XCircle className="h-12 w-12 text-red-600" />
+    <div className="max-w-2xl mx-auto flex flex-col gap-6 py-8">
+      {/* ── Hero card ── */}
+      <div className="bg-card border border-border rounded-2xl p-8 flex flex-col items-center gap-6 text-center">
+        {/* Donut + grade icon */}
+        <div className="relative w-36 h-36">
+          <svg className="w-36 h-36 -rotate-90" viewBox="0 0 128 128">
+            <circle
+              cx="64" cy="64" r="54"
+              fill="none" stroke="currentColor" strokeWidth="10"
+              className="text-border"
+            />
+            <circle
+              cx="64" cy="64" r="54"
+              fill="none" stroke="currentColor" strokeWidth="10"
+              strokeDasharray={`${circumference}`}
+              strokeDashoffset={`${circumference * (1 - percentage / 100)}`}
+              strokeLinecap="round"
+              className={gradeConfig.ring}
+              style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+            <span className="text-3xl font-bold text-foreground">{percentage}%</span>
+          </div>
+        </div>
+
+        {/* Grade label */}
+        <div className="flex flex-col items-center gap-1">
+          <div className={cn('flex items-center gap-2', gradeConfig.color)}>
+            <GradeIcon size={20} />
+            <h2 className="text-2xl font-bold">{gradeConfig.label}</h2>
+          </div>
+          <p className="text-muted-foreground text-sm">{gradeConfig.sub}</p>
+          {minutes !== null && (
+            <p className="text-xs text-muted-foreground">
+              Tiempo: {minutes}:{String(seconds).padStart(2, '0')}
+            </p>
           )}
         </div>
 
-        <h1 className="text-3xl font-bold">
-          {passed ? '¡Aprobado!' : 'No aprobado'}
-        </h1>
+        {/* Stats row */}
+        <div className="w-full grid grid-cols-3 gap-3">
+          <div className="rounded-xl bg-chart-3/10 border border-chart-3/20 p-3 flex flex-col items-center gap-1">
+            <Check size={16} className="text-chart-3" />
+            <span className="text-xl font-bold text-foreground">{totalScore}</span>
+            <span className="text-xs text-muted-foreground">Correctas</span>
+          </div>
+          <div className="rounded-xl bg-chart-5/10 border border-chart-5/20 p-3 flex flex-col items-center gap-1">
+            <X size={16} className="text-chart-5" />
+            <span className="text-xl font-bold text-foreground">{incorrect}</span>
+            <span className="text-xs text-muted-foreground">Incorrectas</span>
+          </div>
+          <div className="rounded-xl bg-muted/50 border border-border p-3 flex flex-col items-center gap-1">
+            <BookOpen size={16} className="text-muted-foreground" />
+            <span className="text-xl font-bold text-foreground">{maxScore}</span>
+            <span className="text-xs text-muted-foreground">Total</span>
+          </div>
+        </div>
 
-        <div className="text-5xl font-bold">{percentage}%</div>
-
-        <p className="text-lg text-muted-foreground">
-          {totalScore} / {maxScore} puntos
-        </p>
-
-        {minutes !== null && (
-          <p className="text-sm text-muted-foreground">
-            Tiempo: {minutes}:{String(seconds).padStart(2, '0')}
-          </p>
-        )}
+        {/* CTA buttons */}
+        <div className="flex gap-3 w-full">
+          <Link href={`/quiz/${quizId}/attempt`} className="flex-1">
+            <Button variant="outline" className="w-full gap-2">
+              <RotateCcw size={15} />
+              Reintentar
+            </Button>
+          </Link>
+          <Link href="/dashboard" className="flex-1">
+            <Button className="w-full gap-2 bg-brand hover:bg-brand/90 text-brand-foreground">
+              <BarChart2 size={15} />
+              Dashboard
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <div className="flex justify-center gap-3">
-        <Link href={`/quiz/${quizId}/attempt`}>
-          <Button variant="outline">Intentar de nuevo</Button>
-        </Link>
-        <Link href="/dashboard">
-          <Button variant="outline">Volver al dashboard</Button>
-        </Link>
-      </div>
+      {/* ── Review section ── */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold text-foreground">Revisión de respuestas</h3>
+          <span className="text-xs text-muted-foreground">
+            Haz clic en cada pregunta para ver el detalle
+          </span>
+        </div>
 
-      <div className="space-y-3">
-        <h2 className="text-xl font-semibold">Detalle de preguntas</h2>
-        {questions.map((q) => {
-          const result = resultByQuestionId.get(q.id)
-          const isExpanded = expanded.has(q.id)
-          return (
-            <Card key={q.id} className="cursor-pointer" onClick={() => toggle(q.id)}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {result?.isCorrect ? (
-                      <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600" />
-                    ) : (
-                      <XCircle className="h-5 w-5 shrink-0 text-red-600" />
-                    )}
-                    <span className="font-medium truncate">{q.content}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant={result?.isCorrect ? 'default' : 'destructive'}>
-                      {result?.pointsEarned ?? 0}/{q.points}
-                    </Badge>
-                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  </div>
-                </div>
-
-                {isExpanded && (
-                  <div className="mt-4 space-y-3 border-t pt-3">
-                    <p className="text-sm"><span className="font-medium">Tipo:</span> {typeLabel(q.type)}</p>
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Tu respuesta:</p>
-                      {renderUserAnswer(q, userAnswerByQuestionId)}
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Respuesta correcta:</p>
-                      {renderCorrectAnswer(q)}
-                    </div>
-
-                    {q.explanation && (
-                      <p className="text-sm text-muted-foreground italic">{q.explanation}</p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+        {questions.map((q, i) => (
+          <QuestionReview
+            key={q.id}
+            q={q}
+            index={i}
+            result={resultByQuestionId.get(q.id)}
+            userAnswer={userAnswerByQuestionId.get(q.id)}
+            isExpanded={expanded.has(q.id)}
+            onToggle={() => toggle(q.id)}
+          />
+        ))}
       </div>
     </div>
   )
+}
+
+/* ── Question Review ── */
+
+function difficultyLabel(d: number): string {
+  return d <= 1 ? 'Fácil' : d === 2 ? 'Medio' : 'Difícil'
+}
+
+function difficultyColor(d: number): string {
+  return d <= 1
+    ? 'bg-chart-3/10 text-chart-3 border-chart-3/30'
+    : d === 2
+      ? 'bg-chart-4/10 text-chart-4 border-chart-4/30'
+      : 'bg-chart-5/10 text-chart-5 border-chart-5/30'
 }
 
 function typeLabel(type: string): string {
@@ -186,133 +226,207 @@ function typeLabel(type: string): string {
   }
 }
 
-function renderUserAnswer(
-  q: ResultData['questions'][0],
-  userAnswerMap: Map<string, AnswerValue>,
-) {
-  const answer = userAnswerMap.get(q.id)
-
-  if (!answer) {
-    return <p className="text-sm text-muted-foreground italic">Sin respuesta</p>
-  }
-
-  switch (q.type) {
-    case 'true-false': {
-      const val = 'value' in answer ? (answer as { value: boolean }).value : null
-      return (
-        <p className="text-sm">
-          {val === true ? 'Verdadero' : val === false ? 'Falso' : '—'}
-        </p>
-      )
-    }
-
-    case 'multiple-choice': {
-      const selectedIds = 'selectedOptionIds' in answer
-        ? (answer as { selectedOptionIds: string[] }).selectedOptionIds
-        : []
-      const selectedTexts = selectedIds
-        .map((id) => q.question_options?.find((o) => o.id === id)?.content)
-        .filter(Boolean)
-      if (selectedTexts.length === 0) {
-        return <p className="text-sm text-muted-foreground italic">Ninguna</p>
-      }
-      return (
-        <ul className="list-disc list-inside text-sm space-y-0.5">
-          {selectedTexts.map((text, i) => (
-            <li key={i}>{text}</li>
-          ))}
-        </ul>
-      )
-    }
-
-    case 'matching': {
-      const pairs = 'pairs' in answer
-        ? (answer as { pairs: { pairId: string; matchedRight: string }[] }).pairs
-        : []
-      if (pairs.length === 0) {
-        return <p className="text-sm text-muted-foreground italic">Ninguno</p>
-      }
-      return (
-        <div className="text-sm space-y-0.5">
-          {pairs.map((p) => {
-            const leftText = q.question_pairs?.find((pp) => pp.id === p.pairId)?.left_text
-            return (
-              <p key={p.pairId}>
-                <span className="font-medium">{leftText ?? '?'}</span> → {p.matchedRight}
-              </p>
-            )
-          })}
-        </div>
-      )
-    }
-
-    case 'ordering': {
-      const itemOrder = 'itemOrder' in answer
-        ? (answer as { itemOrder: string[] }).itemOrder
-        : []
-      if (itemOrder.length === 0) {
-        return <p className="text-sm text-muted-foreground italic">Ninguno</p>
-      }
-      return (
-        <div className="text-sm space-y-0.5">
-          {itemOrder.map((id, i) => {
-            const content = q.question_items?.find((it) => it.id === id)?.content
-            return <p key={id}>{i + 1}. {content ?? '?'}</p>
-          })}
-        </div>
-      )
-    }
-
-    default:
-      return <p className="text-sm text-muted-foreground italic">Tipo no soportado</p>
-  }
+function getOptionLabel(q: ResultData['questions'][0], id: string): string {
+  if (q.type === 'multiple-choice') return q.question_options?.find((o) => o.id === id)?.content ?? id
+  if (q.type === 'true-false') return id === 'true' ? 'Verdadero' : 'Falso'
+  return id
 }
 
-function renderCorrectAnswer(q: ResultData['questions'][0]) {
-  switch (q.type) {
-    case 'true-false':
-    case 'multiple-choice': {
-      if (!q.question_options) return null
-      return (
-        <div className="space-y-0.5">
-          {q.question_options.map((opt) => (
-            <p key={opt.id} className={`text-sm ${opt.is_correct ? 'text-green-600 font-medium' : ''}`}>
-              {opt.content} {opt.is_correct ? '(correcta)' : ''}
-            </p>
-          ))}
-        </div>
-      )
-    }
+interface QuestionReviewProps {
+  q: ResultData['questions'][0]
+  index: number
+  result: ResultAnswer | undefined
+  userAnswer: AnswerValue | undefined
+  isExpanded: boolean
+  onToggle: () => void
+}
 
-    case 'matching': {
-      if (!q.question_pairs) return null
-      return (
-        <div className="space-y-0.5">
-          {q.question_pairs.map((p) => (
-            <p key={p.id} className="text-sm">
-              <span className="font-medium">{p.left_text}</span> → {p.right_text}
-            </p>
-          ))}
-        </div>
-      )
-    }
+function QuestionReview({ q, index, result, userAnswer, isExpanded, onToggle }: QuestionReviewProps) {
+  const correct = result?.isCorrect ?? false
+  const skipped = !userAnswer
 
-    case 'ordering': {
-      if (!q.question_items) return null
-      return (
-        <div className="space-y-0.5">
-          {[...q.question_items]
-            .sort((a, b) => a.correct_order - b.correct_order)
-            .map((it, i) => (
-              <p key={it.id} className="text-sm">
-                {i + 1}. {it.content}
-              </p>
-            ))}
-        </div>
-      )
-    }
+  const renderUserAnswerContent = () => {
+    if (!userAnswer) return <span className="text-muted-foreground">Sin respuesta</span>
 
-    default:
-      return null
+    switch (q.type) {
+      case 'true-false': {
+        const val = 'value' in userAnswer ? (userAnswer as { value: boolean }).value : null
+        return <span>{val === true ? 'Verdadero' : val === false ? 'Falso' : '—'}</span>
+      }
+      case 'multiple-choice': {
+        const selectedIds = 'selectedOptionIds' in userAnswer
+          ? (userAnswer as { selectedOptionIds: string[] }).selectedOptionIds
+          : []
+        const texts = selectedIds.map((id) => q.question_options?.find((o) => o.id === id)?.content).filter(Boolean)
+        if (texts.length === 0) return <span className="text-muted-foreground">Ninguna</span>
+        return (
+          <ul className="list-disc list-inside space-y-0.5">
+            {texts.map((t, i) => <li key={i}>{t}</li>)}
+          </ul>
+        )
+      }
+      case 'matching': {
+        const pairs = 'pairs' in userAnswer
+          ? (userAnswer as { pairs: { pairId: string; matchedRight: string }[] }).pairs
+          : []
+        if (pairs.length === 0) return <span className="text-muted-foreground">Ninguno</span>
+        return (
+          <div className="space-y-0.5">
+            {pairs.map((p) => {
+              const leftText = q.question_pairs?.find((pp) => pp.id === p.pairId)?.left_text
+              return <p key={p.pairId}><span className="font-medium">{leftText ?? '?'}</span> → {p.matchedRight}</p>
+            })}
+          </div>
+        )
+      }
+      case 'ordering': {
+        const itemOrder = 'itemOrder' in userAnswer
+          ? (userAnswer as { itemOrder: string[] }).itemOrder
+          : []
+        if (itemOrder.length === 0) return <span className="text-muted-foreground">Ninguno</span>
+        return (
+          <div className="space-y-0.5">
+            {itemOrder.map((id, i) => {
+              const content = q.question_items?.find((it) => it.id === id)?.content
+              return <p key={id}>{i + 1}. {content ?? '?'}</p>
+            })}
+          </div>
+        )
+      }
+      default:
+        return <span className="text-muted-foreground italic">Tipo no soportado</span>
+    }
   }
+
+  const renderCorrectAnswer = () => {
+    switch (q.type) {
+      case 'true-false':
+      case 'multiple-choice': {
+        if (!q.question_options) return null
+        return (
+          <div className="space-y-0.5">
+            {q.question_options.filter((o) => o.is_correct).map((opt) => (
+              <p key={opt.id} className="font-medium">{opt.content}</p>
+            ))}
+          </div>
+        )
+      }
+      case 'matching': {
+        if (!q.question_pairs) return null
+        return (
+          <div className="space-y-0.5">
+            {q.question_pairs.map((p) => (
+              <p key={p.id}><span className="font-medium">{p.left_text}</span> → {p.right_text}</p>
+            ))}
+          </div>
+        )
+      }
+      case 'ordering': {
+        if (!q.question_items) return null
+        return (
+          <div className="space-y-0.5">
+            {[...q.question_items].sort((a, b) => a.correct_order - b.correct_order).map((it, i) => (
+              <p key={it.id}>{i + 1}. {it.content}</p>
+            ))}
+          </div>
+        )
+      }
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div
+      className={cn(
+        'rounded-2xl border overflow-hidden transition-colors',
+        correct ? 'border-chart-3/30' : skipped ? 'border-border' : 'border-chart-5/30',
+      )}
+    >
+      {/* Collapsed header */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/30 transition-colors"
+      >
+        <div
+          className={cn(
+            'w-7 h-7 rounded-full flex items-center justify-center shrink-0',
+            correct ? 'bg-chart-3' : skipped ? 'bg-muted' : 'bg-chart-5',
+          )}
+        >
+          {correct ? (
+            <Check size={13} className="text-white" />
+          ) : skipped ? (
+            <span className="text-xs text-muted-foreground font-bold">—</span>
+          ) : (
+            <X size={13} className="text-white" />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <span className="text-xs text-muted-foreground font-medium">Pregunta {index + 1}</span>
+          <p className="text-sm font-medium text-foreground leading-snug mt-0.5 truncate pr-2">{q.content}</p>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge
+            variant="outline"
+            className={cn('text-xs hidden sm:inline-flex', difficultyColor(q.difficulty))}
+          >
+            {difficultyLabel(q.difficulty)}
+          </Badge>
+          <ChevronDown
+            size={16}
+            className={cn('text-muted-foreground transition-transform duration-200', isExpanded && 'rotate-180')}
+          />
+        </div>
+      </button>
+
+      {/* Expanded body */}
+      {isExpanded && (
+        <div className="px-4 pb-4 flex flex-col gap-3 border-t border-border/50 pt-4">
+          <p className="text-sm text-foreground leading-relaxed">{q.content}</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div
+              className={cn(
+                'rounded-xl border p-3 flex flex-col gap-1',
+                correct ? 'border-chart-3/40 bg-chart-3/8' : 'border-chart-5/40 bg-chart-5/8',
+              )}
+            >
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Tu respuesta
+              </span>
+              <span
+                className={cn(
+                  'text-sm font-medium',
+                  correct ? 'text-chart-3' : skipped ? 'text-muted-foreground' : 'text-chart-5',
+                )}
+              >
+                {renderUserAnswerContent()}
+              </span>
+            </div>
+
+            {!correct && (
+              <div className="rounded-xl border border-chart-3/40 bg-chart-3/8 p-3 flex flex-col gap-1">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Respuesta correcta
+                </span>
+                <span className="text-sm font-medium text-chart-3">
+                  {renderCorrectAnswer()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {q.explanation && (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl bg-brand-subtle/50 border border-brand/20">
+              <Lightbulb size={15} className="text-brand mt-0.5 shrink-0" />
+              <p className="text-sm text-foreground leading-relaxed">{q.explanation}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
