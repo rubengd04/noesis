@@ -23,7 +23,13 @@ export async function GET(
     return NextResponse.json({ error: 'Quiz no encontrado' }, { status: 404 })
   }
 
-  return NextResponse.json(data)
+  // Include question count for the start screen
+  const { count: questionCount } = await supabase
+    .from('questions')
+    .select('*', { count: 'exact', head: true })
+    .eq('quiz_id', quizId)
+
+  return NextResponse.json({ ...data, _questionCount: questionCount ?? 0 })
 }
 
 export async function PUT(
