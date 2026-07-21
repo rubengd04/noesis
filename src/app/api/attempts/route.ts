@@ -96,7 +96,9 @@ export async function GET(request: NextRequest) {
   }
 
   let rows = (attempts ?? []).map((a: AttemptRow) => {
-    const quiz = a.quizzes?.[0] ?? null
+    // PostgREST returns singular forward relationships (many-to-one) as
+    // a JSON object, not an array. Handle both formats defensively.
+    const quiz = a.quizzes ? (Array.isArray(a.quizzes) ? a.quizzes[0] ?? null : a.quizzes) : null
     const percentage = Math.round((a.score / a.max_score) * 1000) / 10
     const ansStats = answerCounts.get(a.id)
     return {
