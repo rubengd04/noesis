@@ -21,7 +21,7 @@ export default async function ProtectedLayout({
   return (
     <div className="flex min-h-screen">
       <Sidebar userEmail={user.email ?? ''} />
-      <main className="flex-1 px-4 py-8 lg:ml-64">
+      <main className="flex-1 px-6 lg:px-10 py-8 lg:ml-64">
         <Breadcrumbs />
         {children}
       </main>
