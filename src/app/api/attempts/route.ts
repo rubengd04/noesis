@@ -168,6 +168,50 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const now = new Date()
+  const msDay = 86_400_000
+  const weekAgo = new Date(now.getTime() - 7 * msDay)
+  const twoWeeksAgo = new Date(now.getTime() - 14 * msDay)
+
+  const weeklyAttempts = (attempts ?? []).filter(
+    (a) => new Date(a.created_at) >= weekAgo,
+  ).length
+
+  const prevWeekAttempts = (attempts ?? []).filter((a) => {
+    const d = new Date(a.created_at)
+    return d >= twoWeeksAgo && d < weekAgo
+  }).length
+
+  const sortedScores = (allScores ?? [])
+    .filter((s: ScoreRow) => s.max_score > 0)
+    .map((s: ScoreRow) => (s.score / s.max_score) * 100)
+  const recentAvg =
+    sortedScores.length > 0
+      ? sortedScores.slice(0, 15).reduce((a: number, b: number) => a + b, 0) /
+        Math.min(sortedScores.length, 15)
+      : 0
+  const olderAvg =
+    sortedScores.length > 15
+      ? sortedScores
+          .slice(15, 30)
+          .reduce((a: number, b: number) => a + b, 0) /
+        Math.min(sortedScores.length - 15, 15)
+      : 0
+  const scoreTrend =
+    olderAvg > 0 ? Math.round((recentAvg - olderAvg) * 10) / 10 : null
+
+  const dailyDistribution: Array<{ date: string; count: number }> = []
+  for (let i = 13; i >= 0; i--) {
+    const day = new Date(now.getTime() - i * msDay)
+    const dayStr = day.toISOString().split('T')[0]
+    dailyDistribution.push({
+      date: dayStr,
+      count: (attempts ?? []).filter(
+        (a) => new Date(a.created_at).toISOString().split('T')[0] === dayStr,
+      ).length,
+    })
+  }
+
   return NextResponse.json({
     data: paginatedRows,
     total,
@@ -175,5 +219,11 @@ export async function GET(request: NextRequest) {
     limit,
     totalPages,
     summary,
+    dashboardStats: {
+      weeklyAttempts,
+      prevWeekAttempts,
+      scoreTrend,
+      dailyDistribution,
+    },
   })
 }

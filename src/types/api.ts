@@ -37,4 +37,11 @@ export interface HistorySummary {
   passRate: number
 }
 
+export interface DashboardStats {
+  weeklyAttempts: number
+  prevWeekAttempts: number
+  scoreTrend: number | null
+  dailyDistribution: Array<{ date: string; count: number }>
+}
+
 export type HistoryStatusFilter = 'all' | 'passed' | 'failed'
