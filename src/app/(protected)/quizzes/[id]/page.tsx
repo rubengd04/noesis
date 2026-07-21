@@ -1,14 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import { QuizSettings } from '@/components/quizzes/quiz-settings'
-import { QuestionList } from '@/components/questions/question-list'
-import { QuizAttemptHistory } from '@/components/quizzes/quiz-attempt-history'
-import { QuizHeaderClient } from './quiz-header-client'
 import Link from 'next/link'
-
+import { ChevronRight } from 'lucide-react'
+import { QuizDetailClient } from './quiz-detail-client'
 export default async function QuizDetailPage({
   params,
 }: {
@@ -40,6 +34,35 @@ export default async function QuizDetailPage({
     .eq('quiz_id', id)
     .order('order_index')
 
+  const { data: attempts } = await supabase
+    .from('attempts')
+    .select('score, max_score, time_seconds, completed_at, created_at')
+    .eq('quiz_id', id)
+    .eq('user_id', user.id)
+    .eq('status', 'completed')
+    .not('max_score', 'is', null)
+    .gt('max_score', 0)
+    .order('completed_at', { ascending: false })
+
+  const percentages: number[] = []
+  for (const a of attempts ?? []) {
+    if (a.max_score && a.max_score > 0 && a.score !== null) {
+      percentages.push(Math.round((a.score / a.max_score) * 1000) / 10)
+    }
+  }
+
+  const stats = {
+    bestPercentage: percentages.length > 0 ? Math.max(...percentages) : null,
+    latestPercentage: percentages.length > 0 ? percentages[0] : null,
+    avgPercentage:
+      percentages.length > 0
+        ? Math.round(
+            (percentages.reduce((sum, p) => sum + p, 0) / percentages.length) * 10
+          ) / 10
+        : null,
+    totalAttempts: percentages.length,
+  }
+
   const { count: completedCount } = await supabase
     .from('attempts')
     .select('*', { count: 'exact', head: true })
@@ -51,87 +74,32 @@ export default async function QuizDetailPage({
     ? Math.max(0, quiz.max_attempts - (completedCount ?? 0))
     : null
 
-  const visibilityLabel = quiz.visibility === 'public' ? 'Público' : 'Privado'
-  const scoringLabel = quiz.scoring_mode === 'all-or-nothing' ? 'Todo o nada' : 'Puntuación parcial'
-  const langLabel = quiz.language === 'es' ? 'ES' : 'EN'
-  const createdDate = new Date(quiz.created_at).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+  const questionCount = questions?.length ?? 0
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold">{quiz.title}</h1>
-            {quiz.description && (
-              <p className="text-sm text-muted-foreground">{quiz.description}</p>
-            )}
-            <p className="text-xs text-muted-foreground">Creado el {createdDate}</p>
-          </div>
-          <QuizHeaderClient quizId={id} />
-        </div>
+    <div className="space-y-6">
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link
+          href="/quizzes"
+          className="hover:text-foreground transition-colors"
+        >
+          Mis quizzes
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="text-foreground font-medium truncate max-w-[300px]">
+          {quiz.title}
+        </span>
+      </nav>
 
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">{questions?.length ?? 0} preguntas</Badge>
-          <Badge variant="outline">{scoringLabel}</Badge>
-          <Badge variant={quiz.visibility === 'public' ? 'default' : 'secondary'}>
-            {visibilityLabel}
-          </Badge>
-          <Badge variant="outline">{langLabel}</Badge>
-          {quiz.time_limit_minutes && (
-            <Badge variant="outline">{quiz.time_limit_minutes} min</Badge>
-          )}
-        </div>
-      </div>
-
-      <div data-quiz-settings>
-        <QuizSettings quiz={quiz} />
-      </div>
-
-      <section className="rounded-lg border p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="font-semibold">Realizar intento</h2>
-            <p className="text-sm text-muted-foreground">
-              {attemptsLeft !== null
-                ? `Te quedan ${attemptsLeft} intento${attemptsLeft !== 1 ? 's' : ''}`
-                : 'Intentos ilimitados'}
-            </p>
-          </div>
-          <Link href={`/quiz/${id}/attempt`}>
-            <Button disabled={attemptsLeft === 0}>
-              Comenzar intento
-            </Button>
-          </Link>
-        </div>
-        <div className="flex gap-2">
-          <Badge variant="outline">{questions?.length ?? 0} preguntas</Badge>
-          <Badge variant="outline">{scoringLabel}</Badge>
-          {quiz.time_limit_minutes && (
-            <Badge variant="outline">{quiz.time_limit_minutes} min</Badge>
-          )}
-        </div>
-      </section>
-
-      <QuizAttemptHistory quizId={id} />
-
-      <Separator />
-
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">
-            Preguntas ({questions?.length ?? 0})
-          </h2>
-        </div>
-
-        <QuestionList
-          quizId={id}
-          questions={questions ?? []}
-        />
-      </section>
+      <QuizDetailClient
+        quiz={quiz}
+        questions={questions ?? []}
+        questionCount={questionCount}
+        stats={stats}
+        attemptsLeft={attemptsLeft}
+      />
     </div>
   )
 }
+
+
